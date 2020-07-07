@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.329
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "BME 261 MFP", "BME 261 MFP\BME 261 MFP.pyproj", "{EDD0CA5C-C6D5-4352-9DFB-C0E620454AD0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EDD0CA5C-C6D5-4352-9DFB-C0E620454AD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDD0CA5C-C6D5-4352-9DFB-C0E620454AD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {0894A2B2-DC81-4B97-A06F-A261775295D1}
+	EndGlobalSection
+EndGlobal
