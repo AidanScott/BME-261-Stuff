@@ -8,12 +8,12 @@
 
 import queue
 import sys
-import asyncio
+import threading
+import time
 
 import sounddevice as sd
 import soundfile as sf
-import numpy  # Make sure NumPy is loaded before it is used in the callback
-assert numpy  # avoid "imported but unused" message (W0611)
+import numpy as np  # Make sure NumPy is loaded before it is used in the callback
 
 #import sockets
 #import tqdm
@@ -50,20 +50,67 @@ assert numpy  # avoid "imported but unused" message (W0611)
 #lets switch back to the main file, and see if we can't get arbitrary duration going.
 #wait no
 # first test; while(stdin.empty())
+#no luck, guess we have to figure out async/await
 
 
+#async def user_input():
+#    input('Press enter to end recording.')
+#    return 1
+#
+#async def record_until():
+#    return await user_input()
+#
+#print(record_until())
+#    num = 0
+#    while(1 != record_until()):
+#        num+=1
+#    
 
-async def record_until(loop, num, is_recording):
-    if(is_recording):
-        num+=1
-    else: loop.stop()
+#loop = asyncio.get_event_loop()
+#
+#async def user_input():
+#    num = input('Enter number here: ')
+#    return num
+#
+#async def count_async(end):
+#    i = 0
+#    while(i < end):
+#        i+=1
+#    print(i)
+#    print('\n\n\n')
+#
+#async def count_if_input():
+#    input = await user_input()
+#    print(input)
+#    print('\n\n\n')
+#
+#def signal_handler(signal, frame):
+#    loop.stop()
+#    sys.exit(0)
+#
+#signal.signal(signal.SIGINT, signal_handler)
+#
+#asyncio.ensure_future(count_if_input())
+#asyncio.ensure_future(count_async(1000000))
+#loop.run_forever()
 
-def main():
-    
-    input('Press enter to stop recording.')
-    is_recording = False
-    loop.close()
+#although I've learned a lot about asyncio, and it definitely seems useful; it seems to not be what I want here, unfortunately >>
 
+#Might have to learn threading, joy
+
+def thread_func(text):
+    print('Thread ', text, ': starting')
+    time.sleep(2)
+    print('Thread ',text,': finishing')
+
+x = threading.Thread(target=thread_func, args=(1,), daemon=True)
+print('pre-thread')
+x.start()
+print('post-thread')
+
+#Hokay. :P
+
+#So. 
 
 #next big hurdle is going to be figuring out processing/analysis with scipy
 
