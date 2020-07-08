@@ -46,7 +46,7 @@ def record(filename):                                               #function fo
                                                                     #thread object that implements the parallel recording function
     recording = threading.Thread(target=threaded_recording, args=(filename,q,))
 
-    recording.start()                                               #recording starts herer
+    recording.start()                                               #recording starts here
 
     input()                                                         #main execution blocked by user input
 
