@@ -18,6 +18,7 @@ import soundfile as sf
 import numpy as np  # Make sure NumPy is loaded before it is used in the callback
 import scipy as sp
 import matplotlib.pyplot as plt
+import scipy.signal as sig
 
 #import sockets
 #import tqdm
@@ -93,6 +94,7 @@ plt.plot(x,single_channel_sample)
 plt.xlabel('Time (s)')
 plt.ylabel('Amplitude')
 plt.grid()
+plt.title('Input Signal')
 plt.show()
 plt.clf()
 
@@ -102,27 +104,101 @@ sample_power = np.abs(sample_fft)
 
 sample_freq = sp.fft.fftfreq(single_channel_sample.size, d=(1/sr))
 
-sample_x = np.linspace(0.0,1000,1000)
-
-#print(np.size(sample_fft,0))
-#print(np.size(sample_power,0))
-#print(np.size(sample_freq,0))
-#print(sample_power)
-
-plt.figure(figsize=(6,5))
-plt.plot(sample_freq[0:2000], 2.0/single_channel_sample.size * sample_power[0:2000])
+plt.plot(sample_freq[0:4350], 2.0/single_channel_sample.size * sample_power[0:4350])
 plt.xlabel('Frequency [Hz]')
 plt.ylabel('Power')
 plt.grid()
+plt.title('Fourier Transform of Signal (0-500Hz)')
 plt.show()
 plt.clf()
 
-#num = 600
-#t = 1.0/800.0
-#x = np.linspace(0.0, num*t, num)
-#y = np.sin(50.0*2.0*np.pi*x) + 0.5*np.sin(80.0*2.0*np.pi*x)
-#y_fft = sp.fft.fft(y)
-#x_fft = np.linspace(0.0,1.0/(2.0*t),num//2)
-#plt.plot(x_fft,2.0/num * np.abs(y_fft[0:num//2]))
-#plt.grid()
+#above first takes an audio files, and converts it from dual-channel to single channel
+#(finalized version would check # of channels first, but I know this sample is dual-channel)
+#then plots the amplitude/time variation of the audio array 
+#(a phonocardiogram in essence; you can fairly easily make out the first and second heart sounds by examination)
+#then it transforms the audio array from time domain to frequency, and plots power/frequency
+
+#next step: filtering
+
+#zero_500_fft = sample_fft.copy()
+#zero_500_fft[np.abs(sample_freq) > 4350] = 0
+#filtered_sample = sp.fft.ifft(zero_500_fft)
+#
+#plt.plot(x,filtered_sample)
+#plt.xlabel('Time (s)')
+#plt.ylabel('Amplitude')
 #plt.show()
+#plt.clf()
+
+#above is a super rough manual filter; literally setting every frequency above ~500 to zero in the transform then inverting it back to a signal
+#below is just a quick comparison of filtered vs original signal (moved below butterworth plot, now))
+#sounds *okay,* there is some distortion though and it's worh noting that sd.play can only take real-valued arrays, and the return from ifft is complex
+
+
+
+#try with butterworth filter?
+
+sos = sig.butter(10,500,'lp',fs=sr,output='sos')
+butter_filtered_sample = sig.sosfilt(sos,single_channel_sample)
+
+plt.plot(x,butter_filtered_sample)
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.grid()
+plt.title('10th Order Butterworth Low-Pass Filter at 500 Hz')
+plt.show()
+plt.clf()
+
+#subjective coparison by sound:
+
+#print('playing original signal')
+#sd.play(single_channel_sample,sr)
+#sd.wait()
+#print('playing rough filtered signal')
+#sd.play(np.real(filtered_sample),sr)
+#sd.wait()
+#print('playing butter filtered signal')
+#sd.play(butter_filtered_sample,sr)
+#sd.wait()
+
+#tbh, not really all that much difference; both filtered samples are slightly muffled. 
+#h/e, this may change once I introduce some noise
+#first, something easy; constant frequency sin waves 
+
+sin_880 = 0.3*np.sin(2*np.pi*880*x*sr) 
+sin_1046 = 0.3*np.sin(2*np.pi*1046*x*sr) 
+
+sin_combined = np.add(sin_880,sin_1046)
+
+noisy_sample = np.add(sin_combined,single_channel_sample)
+
+plt.plot(x,noisy_sample)
+plt.grid()
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.title('Signal Resulting from Introduced Noise')
+plt.show()
+
+#sd.play(noisy_sample,sr)
+#sd.wait()
+
+#introduced hum renders heart sound near indistinguishable
+#try filter?
+
+filter_500hz = sig.sosfilt(sos,noisy_sample)
+
+plt.plot(x,filter_500hz)
+plt.grid()
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.title('Denoised Signal')
+plt.show()
+
+sd.play(filter_500hz,sr)
+sd.wait()
+
+#this doesn't work
+#shit
+#this was supposed to be the easy one
+#aight, let's see if we can't figure out why
+
