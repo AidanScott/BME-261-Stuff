@@ -86,17 +86,19 @@ sample, sr = sf.read('Apex16.au')
 
 single_channel_sample = np.add(sample[:,0],sample[:,1])
 
+print(sample.ndim)
+
 print(np.size(single_channel_sample))
 
 x = np.linspace(0.0,single_channel_sample.size/sr,single_channel_sample.size)
 
-plt.plot(x,single_channel_sample)
-plt.xlabel('Time (s)')
-plt.ylabel('Amplitude')
-plt.grid()
-plt.title('Input Signal')
-plt.show()
-plt.clf()
+#plt.plot(x,single_channel_sample)
+#plt.xlabel('Time (s)')
+#plt.ylabel('Amplitude')
+#plt.grid()
+#plt.title('Input Signal')
+#plt.show()
+#plt.clf()
 
 sample_fft = sp.fft.fft(single_channel_sample)
 
@@ -104,13 +106,21 @@ sample_power = np.abs(sample_fft)
 
 sample_freq = sp.fft.fftfreq(single_channel_sample.size, d=(1/sr))
 
-plt.plot(sample_freq[0:4350], 2.0/single_channel_sample.size * sample_power[0:4350])
-plt.xlabel('Frequency [Hz]')
-plt.ylabel('Power')
-plt.grid()
-plt.title('Fourier Transform of Signal (0-500Hz)')
+f, t, s = sig.spectrogram(single_channel_sample, sr)
+plt.pcolormesh(t, f, s, shading='gouraud')
+plt.ylabel('Frequency [Hz]')
+plt.xlabel('Time [s]')
+plt.axis([0,9,0,1000])
 plt.show()
 plt.clf()
+
+#plt.plot(sample_freq[0:sample.size*1000//(2*sr)], 2.0/single_channel_sample.size * sample_power[0:sample.size*1000//(2*sr)])
+#plt.xlabel('Frequency [Hz]')
+#plt.ylabel('Power')
+#plt.grid()
+#plt.title('Fourier Transform of Signal (0-500Hz)')
+#plt.show()
+#plt.clf()
 
 #above first takes an audio files, and converts it from dual-channel to single channel
 #(finalized version would check # of channels first, but I know this sample is dual-channel)
@@ -138,16 +148,16 @@ plt.clf()
 
 #try with butterworth filter?
 
-sos = sig.butter(10,500,'lp',fs=sr,output='sos')
-butter_filtered_sample = sig.sosfilt(sos,single_channel_sample)
+sos500 = sig.butter(3,500,'lp',fs=sr,output='sos')
+#butter_filtered_sample = sig.sosfilt(sos500,single_channel_sample)
 
-plt.plot(x,butter_filtered_sample)
-plt.xlabel('Time (s)')
-plt.ylabel('Amplitude')
-plt.grid()
-plt.title('10th Order Butterworth Low-Pass Filter at 500 Hz')
-plt.show()
-plt.clf()
+#plt.plot(x,butter_filtered_sample)
+#plt.xlabel('Time (s)')
+#plt.ylabel('Amplitude')
+#plt.grid()
+#plt.title('10th Order Butterworth Low-Pass Filter at 500 Hz')
+#plt.show()
+#plt.clf()
 
 #subjective coparison by sound:
 
@@ -165,14 +175,24 @@ plt.clf()
 #h/e, this may change once I introduce some noise
 #first, something easy; constant frequency sin waves 
 
-sin_880 = 0.3*np.sin(2*np.pi*880*x*sr) 
-sin_1046 = 0.3*np.sin(2*np.pi*1046*x*sr) 
+sin_1760 = 0.3*np.sin(2*1760*np.pi*x) 
+sin_2092 = 0.3*np.sin(2*np.pi*2092*x) 
+sin_10 = 0.3*np.sin(2*10*np.pi*x)
 
-sin_combined = np.add(sin_880,sin_1046)
+sin_combined = np.add(sin_1760,sin_2092)
 
 noisy_sample = np.add(sin_combined,single_channel_sample)
+extra_noisy = np.add(noisy_sample,sin_10)
+sin10_1760 = np.add(sin_10,sin_1760)
+noisy_sig = np.add(sin10_1760,single_channel_sample)
 
-plt.plot(x,noisy_sample)
+sf.write('Apex16(noisy).wav', extra_noisy, sr)
+file_change, new_rate = sf.read('Apex16(noisy).wav')
+
+#element-wise addition resuslts in an overlay of the original signal with a deeply annoying hum
+#seriously, don't bother listening unless you're debugging, it's unpleasant :P
+
+plt.plot(x,extra_noisy)
 plt.grid()
 plt.xlabel('Time (s)')
 plt.ylabel('Amplitude')
@@ -184,21 +204,56 @@ plt.show()
 
 #introduced hum renders heart sound near indistinguishable
 #try filter?
+sos20_500 = sig.butter(10,[20,500],'bp',output='sos', fs=sr)
 
-filter_500hz = sig.sosfilt(sos,noisy_sample)
+filter_500hz = sig.sosfilt(sos500,noisy_sample)
+filter_20_500hz = sig.sosfilt(sos20_500, file_change)
 
-plt.plot(x,filter_500hz)
+#plt.plot(x,filter_500hz)
+#plt.grid()
+#plt.xlabel('Time (s)')
+#plt.ylabel('Amplitude')
+#plt.title('Denoised Signal (Low Pass)')
+#plt.show()
+#
+plt.plot(x,file_change)
 plt.grid()
 plt.xlabel('Time (s)')
 plt.ylabel('Amplitude')
-plt.title('Denoised Signal')
+plt.title('Very Noisy Signal')
 plt.show()
 
-sd.play(filter_500hz,sr)
-sd.wait()
+plt.plot(x,filter_20_500hz)
+plt.grid()
+plt.xlabel('Time (s)')
+plt.ylabel('Amplitude')
+plt.title('Denoised Signal (Band Pass)')
+plt.show()
+
+#sd.play(filter_500hz,sr)
+#sd.wait()
+
+#plt.plot(x,sin_combined)
+#plt.grid()
+#plt.xlabel('Time (s)')
+#plt.ylabel('Amplitude')
+#plt.title('880Hz+1046Hz')
+#plt.show()
+#
+#sd.play(single_channel_sample,sr)
+#sd.wait()
+#sd.play(noisy_sample,sr)
+#sd.wait()
+#sd.play(filter_500hz,sr)
+#sd.wait()
 
 #this doesn't work
 #shit
 #this was supposed to be the easy one
 #aight, let's see if we can't figure out why
 
+#cool, shit works now
+#step 1 of processing, restrict sample to 20-500 band: complete
+
+#let's transfer this over to mfp now
+#(checked that the bp tag works; it does)
