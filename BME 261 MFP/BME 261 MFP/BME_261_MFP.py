@@ -30,12 +30,12 @@ def threaded_recording(filename,q):                                 #function fo
         with sf.SoundFile(filename, mode='x', samplerate=44100, channels=1) as file:
             with sd.InputStream(samplerate=44100,channels=1,callback=callback):
                 print('#'*80)
-                print('press enter to stop recording')
+                print('Press enter to stop recording')
                 print('#'*80)
                 while is_recording:
                     file.write(q.get())
     except KeyboardInterrupt:
-        print('\nRecording Finished: ' + filename)
+        print('\nRecording ended unexpectedly, recording may be incomplete: ' + filename)
     except Exception as e:
         print(type(e).__name__ + ': ' + str(e))
 
@@ -69,7 +69,9 @@ def preprocessing(filename):
                                                                     #defines a 10th order band-pass filter between 20 and 1000Hz; excluding sounds outside the range of heart signals
     band_pass_filter = sig.butter(10,[20,1000],'bp',output='sos',fs=sr)
 
-    filtered_signal = sig.sosfilt(band_pass_filter, signal)   #applies the filter to the signal
+    filtered_signal = sig.sosfilt(band_pass_filter, signal)         #applies the filter to the signal
+
+    filtered_signal = filtered_signal/np.max(filtered_signal)       #normalizes filtered signal to magnitude 1
 
     signal_fft = sp.fft.fft(filtered_signal)                        #returns fast fourier transform of the signal
 
@@ -114,7 +116,7 @@ def display_signal(signal, sr, id, mode):                           #generates a
         plt.show()
         plt.clf()
 
-    elif(mode == 'spec'):                                           #generates ad displays signal spectrogram
+    elif(mode == 'spec'):                                           #generates and displays signal spectrogram
 
         f, t, s = sig.spectrogram(signal,sr)                        #scipy spectrogram function
 
@@ -122,15 +124,15 @@ def display_signal(signal, sr, id, mode):                           #generates a
         plt.ylabel('Frequency [Hz]')
         plt.xlabel('Time [s]')
         plt.axis([0,signal.size/sr,0,1000])                         #restrics area plotted to 0,1000
-        plt.title('Frequency vs Time: ' + id)
+        plt.title('Spectrogram: ' + id)
         plt.show()
         plt.clf()
     
 
 #record('testing.wav')                                              #recording testing  
 
-processed_signal = preprocessing('Apex16(noisy).au')               #processing testing
-                                                                    #file is a heart sound (Apex16.au) overlaid with three sin waves, one at 10 hz, one at ~1100hz and one at ~1750hz
+processed_signal = preprocessing('Apex16(noisy).au')                #processing testing
+                                                                    #file is a heart sound (Apex16.au) overlaid with three sin waves, one at 10 hz, one at ~2000hz and one at ~1750hz
 
                                                                     #display testing
 display_signal(processed_signal[0],processed_signal[1],'Input','time')
