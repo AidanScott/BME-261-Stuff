@@ -72,7 +72,7 @@ def preprocessing(file_name):
 
     if(file_type not in valid_types):                               #checks if the provided file is a type soundfile can read, if not, first creates a copy in a format that it can, through pydub
         
-        dub.AudioSegment.from_file(file_name).export(file_title + '.wav')
+        dub.AudioSegment.from_file(file_name).export(file_title + '.wav','wav')
         file_name = file_title + '.wav'
 
     signal, sr = sf.read(file_name)                                 #reads audio file to np.array (signal), and returns sampling rate as an int (sr) 
@@ -194,7 +194,7 @@ def find_peaks_hs(signal, sr):                                      #finds peaks
                                                                     #uses scipy.find_peaks to find the peaks in the smoothed envelope
     env_peaks, properties = sig.find_peaks(smooth_hilbert,height=max(smooth_hilbert/10),width=[None,None])
     
-    width_index = properties['width_heights']*sr//2                 #defines an array of peak widths that correspond to each envelope peak; on average the widths of the envelope peaks are a few samples longer than the true width of the signal's peaks, but the difference is slight
+    width_index = properties['width_heights']*sr//2                 #defines an array of peak widths that correspond to each envelope peak; on average the widths of the envelope peaks are a few samples longer than the true width of the signal's peaks, due to smoothing, but the difference is slight
                                                                     #this corresponds roughly to the duration of the heart sound in question
 
     peak_value = np.empty((env_peaks.size-1))                       #some empty arrays that will become useful shortly
@@ -239,7 +239,7 @@ def feature_extraction(signal, sr):
                                                                     #procedurally checks the relationship between adjacent peaks, assuming they will follow a repeating high/low pattern
                                                                     #gets around the issues with chuncking going wrong if heart rate was determined incorrectly, 
                                                                     #although it has some issues of it's own; namely that if A: multiple anomalies occur between expected peaks, it will go wrong, (this could likely be fixed without rewriting from scratch, although it will take some doing) 
-                                                                    #or if some noise causes peak amplitudes to be inconsistent, it will flag things as anomalies that may not be
+                                                                    #or B: if some noise causes peak amplitudes to be inconsistent, it will flag things as anomalies that may not be
 
                                                                     #defines several useful variables; a counter, a placeholder for peak delta, a flag for the placement of the final index, and empty arrays that will contain the sorted indicies
     i = 0
@@ -289,6 +289,7 @@ def feature_extraction(signal, sr):
             i+=1
 
                                                                     #statement to handle the last indexed peak; could default either to anomaly, or assume correctness; assuming correctness for now
+                                                                    #possible best version of this would either make use of a more sophisticated techique, or omit the final peak (similar to how the first peak is ommited due to boundary errors)
     if(last_encountered == 2):
         s1 = np.append(s1,peak_index[i])
     else:
@@ -349,7 +350,9 @@ def feature_extraction(signal, sr):
 
 #record('testing.wav')                                              #recording demo  
 
-file_name = 'Apex16(noisy).au'
+#file_name = 'Apex16(noisy).au'
+file_name = '01 Apex, Normal S1 S2, Supine, Bell.mp3'
+
 
 processed_signal = preprocessing(file_name)                         #preprocessing demo
                                                                     #file is a heart sound (Apex16.au) overlaid with three sin waves, one at 10 hz, one at ~2000hz and one at ~1750hz
@@ -370,7 +373,7 @@ display_signal(processed_signal[2],processed_signal[1],'Filtered Signal','spec')
 signal_features = feature_extraction(processed_signal[2],processed_signal[1])
 
 print('Times of Peaks corresponding to S1 [s]')
-print(signal_features['S1 Peaks']/processed_signal[1])              #reads out the indicies of peaks corresponding to s1 and s2
+print(signal_features['S1 Peaks']/processed_signal[1])              #reads out the indicies of peaks corresponding to s1 and s2, and any peaks that don't seem to be either
 print('\n\nTimes of Peaks corresponding to S2 [s]')
 print(signal_features['S2 Peaks']/processed_signal[1])
 print('\n\nTimes of Anomalous Peaks [s] (Note: If not empty, other signal features may have been calculated incorrectly)')
@@ -391,7 +394,7 @@ print(signal_features['S2 Duration'])
 #file_title, file_type = file_name.rsplit(".",1)                    #uncomment if you want output of filtered audio file
 #sf.write(file_title + 'filtered.wav',processed_signal[2],processed_signal[1])                 
 
-#sd.play(processed_signal[2],processed_signal[1])                     #uncomment if you want to listen to the filtered audio
+#sd.play(processed_signal[2],processed_signal[1])                   #uncomment if you want to listen to the filtered audio
 #sd.wait()
 
 
