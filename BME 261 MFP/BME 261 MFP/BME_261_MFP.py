@@ -207,7 +207,7 @@ def find_peaks_hs(signal, sr):                                      #finds peaks
         peak_index[(i-1)] = int(np.where(signal[int(env_peaks[i]-width_index[i]):int(env_peaks[i]+width_index[i])] == peak_value[(i-1)])[0] + env_peaks[i] - width_index[i])
         i+=1
 
-    return peak_index, width_index, peak_value                      #returns the location, duration and amplitude of peaks, for use in feature extraction
+    return peak_index, width_index, peak_value                                  #returns the location, duration and amplitude of peaks, for use in feature extraction
 
 def feature_extraction(signal, sr):
 
@@ -234,7 +234,7 @@ def feature_extraction(signal, sr):
 
     #in progress: convert peak indicies to heartrate (DONE) - easy if I assume the majority of peaks are s1 or s2 (60 over twice the average distance between peaks); if anomalous peaks show up or the signal is too noisy though the number will be way off
     #sort peaks by amplitude; separate somehow? (DONE) - again, easy if I can assume the majority of peaks are either s1 or s2 (sort by amplitude, split in half?); more useful in the case where the signal is *not* so clean, however
-    #breakdown of cardiac cycle, avg duration, amplitude (DONE), frequency content during s1, s2, systole, diastole
+    #breakdown of cardiac cycle, avg duration (DONE), amplitude (DONE), frequency content during s1, s2, systole, diastole
 
                                                                     #procedurally checks the relationship between adjacent peaks, assuming they will follow a repeating high/low pattern
                                                                     #gets around the issues with chuncking going wrong if heart rate was determined incorrectly, 
@@ -321,19 +321,13 @@ def feature_extraction(signal, sr):
 
     feature.setdefault('Average S1/S2 Ratio', avg_s1/avg_s2)        #stores ratio between amplitudes of s1 and s2
 
-    #duration?
-
-    #width associated with sorted peak
-
-    #width_index[np.where(peak_value == s1[1])]
 
     avg_s1 = 0                                                      #reset counter and placeholder to 0
 
     i = 0
 
-    while(i<s1.size):
+    while(i<s1.size):                                               #summs the width in indexes of the sorted peaks
         avg_s1 += width_index[int(np.where(peak_value == signal[int(s1[i])])[0])+1]
-        print(width_index[int(np.where(peak_value == signal[int(s1[i])])[0])+1])
         i+=1
 
     avg_s1 /= s1.size
@@ -344,7 +338,6 @@ def feature_extraction(signal, sr):
 
     while(i<s2.size):
         avg_s2 += width_index[int(np.where(peak_value == signal[int(s2[i])])[0])+1]
-        print(width_index[int(np.where(peak_value == signal[int(s2[i])])[0])+1])
         i+=1
 
     avg_s2 /= s2.size
@@ -356,13 +349,19 @@ def feature_extraction(signal, sr):
 
 #record('testing.wav')                                              #recording demo  
 
-processed_signal = preprocessing('Apex16(noisy).au')                #preprocessing demo
+file_name = 'Apex16(noisy).au'
+
+processed_signal = preprocessing(file_name)                         #preprocessing demo
                                                                     #file is a heart sound (Apex16.au) overlaid with three sin waves, one at 10 hz, one at ~2000hz and one at ~1750hz
 
                                                                     #display demo
+print('Displaying Input Phonocardiogram\n\n')                                                                    
 display_signal(processed_signal[0],processed_signal[1],'Input','time')
+print('Displaying Filtered Phonocardiogram\n\n')
 display_signal(processed_signal[2],processed_signal[1],'Filtered','time')
+print('Displaying Fourier Tranform of Filtered Signal\n\n')
 display_signal(processed_signal[3],processed_signal[1],'FFT of Filtered Signal','freq')
+print('Displaying Spectrogram of Filtered Signal\n\n')
 display_signal(processed_signal[2],processed_signal[1],'Filtered Signal','spec')
 
                                                                     #feature extractiion demo
@@ -370,15 +369,30 @@ display_signal(processed_signal[2],processed_signal[1],'Filtered Signal','spec')
                                                                     #main function call
 signal_features = feature_extraction(processed_signal[2],processed_signal[1])
 
+print('Times of Peaks corresponding to S1 [s]')
 print(signal_features['S1 Peaks']/processed_signal[1])              #reads out the indicies of peaks corresponding to s1 and s2
+print('\n\nTimes of Peaks corresponding to S2 [s]')
 print(signal_features['S2 Peaks']/processed_signal[1])
-                                                                    #displays signal with peaks highlighted
+print('\n\nTimes of Anomalous Peaks [s] (Note: If not empty, other signal features may have been calculated incorrectly)')
+print(signal_features['Anomalous Peaks']/processed_signal[1])
+
+print('\n\nDisplaying Filtered Signal with Peaks Highlighted')      #displays signal with peaks highlighted
 display_signal(processed_signal[2],processed_signal[1],'Filtered','peaks',signal_features['Peak Indicies'])
+
+print('\n\nAverage Heart Rate (BPM)')
 print(signal_features['Heart Rate'])                                #reads out determined heart rate
+print('\n\nAverage Ratio Between Amplitudes of S1 and S2')
 print(signal_features['Average S1/S2 Ratio'])                       #reads out ratio between amplitudes of S1 and S2
+print('\n\nAverage Duration of S1 [s]')
 print(signal_features['S1 Duration'])                               #reads out determined average durations of s1 and s2
+print('\n\nAverage Duration of S2 [s]')
 print(signal_features['S2 Duration'])
 
+#file_title, file_type = file_name.rsplit(".",1)                    #uncomment if you want output of filtered audio file
+#sf.write(file_title + 'filtered.wav',processed_signal[2],processed_signal[1])                 
+
+#sd.play(processed_signal[2],processed_signal[1])                     #uncomment if you want to listen to the filtered audio
+#sd.wait()
 
 
 
